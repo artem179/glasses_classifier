@@ -49,3 +49,16 @@ if __name__ == "__main__":
                                             '/media/main/data2/projects/glasses_classification/data.txt')
     print(labels[:3])
     print(len(images), len(labels))
+
+    import matplotlib.pyplot as plt
+    import itertools
+    import numpy as np
+    indexes = np.random.choice(np.arange(len(labels)), 50)
+
+    fig, axes = plt.subplots(5, 10, figsize=(10, 10))
+    to_list_range = lambda n: list(range(n))
+    ij = list(itertools.product(to_list_range(5), to_list_range(10)))
+    for index, (i, j) in zip(indexes, ij):
+        axes[i, j].imshow(images[index][:,:,::-1])
+        axes[i, j].set_title(str(labels[index]))
+    fig.savefig('classes.png')
