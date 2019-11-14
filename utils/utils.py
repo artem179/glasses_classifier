@@ -37,7 +37,7 @@ def get_final_roi(pts, shape, margin_scale=0.2, do_scaling=False):
         delta_y = abs(max_y - min_y) * margin_scale
         min_y, max_y = max(0, min_y - delta_y), min(shape[0], max_y + delta_y)
 
-    return list(map(int, [min_x, max_x, min_y, max_y]))
+    return list(map(int, [min_x, min_y, max_x, max_y]))
 
 
 def crop_img(img, roi_box):
@@ -115,7 +115,6 @@ def _load_tensor(fp, mode='cpu'):
     elif mode.lower() == 'gpu':
         return torch.from_numpy(_load(fp)).cuda()
 
-
 keypoints = _load('../config_stuff/keypoints_sim.npy')
 w_shp = _load('../config_stuff/w_shp_sim.npy')
 w_exp = _load('../config_stuff/w_exp_sim.npy')
@@ -136,3 +135,59 @@ u_base = u[keypoints].reshape(-1, 1)
 w_shp_base = w_shp[keypoints]
 w_exp_base = w_exp[keypoints]
 std_size = 120
+
+def _parse_param(param):
+    """Work for both numpy and tensor"""
+    p_ = param[:12].reshape(3, -1)
+    p = p_[:, :3]
+    offset = p_[:, -1].reshape(3, 1)
+    alpha_shp = param[12:52].reshape(-1, 1)
+    alpha_exp = param[52:].reshape(-1, 1)
+    return p, offset, alpha_shp, alpha_exp
+
+def reconstruct_vertex(param, whitening=True, dense=False, transform=True):
+    """Whitening param -> 3d vertex, based on the 3dmm param: u_base, w_shp, w_exp
+    dense: if True, return dense vertex, else return 68 sparse landmarks. All dense or sparse vertex is transformed to
+    image coordinate space, but without alignment caused by face cropping.
+    transform: whether transform to image space
+    """
+    if len(param) == 12:
+        param = np.concatenate((param, [0] * 50))
+    if whitening:
+        if len(param) == 62:
+            param = param * param_std + param_mean
+        else:
+            param = np.concatenate((param[:11], [0], param[11:]))
+            param = param * param_std + param_mean
+
+    p, offset, alpha_shp, alpha_exp = _parse_param(param)
+
+    if dense:
+        vertex = p @ (u + w_shp @ alpha_shp + w_exp @ alpha_exp).reshape(3, -1, order='F') + offset
+
+        if transform:
+            # transform to image coordinate space
+            vertex[1, :] = std_size + 1 - vertex[1, :]
+    else:
+        """For 68 pts"""
+        vertex = p @ (u_base + w_shp_base @ alpha_shp + w_exp_base @ alpha_exp).reshape(3, -1, order='F') + offset
+
+        if transform:
+            # transform to image coordinate space
+            vertex[1, :] = std_size + 1 - vertex[1, :]
+
+    return vertex
+
+
+def predict_68pts(param, roi_bbox, dense=False, transform=True):
+    vertex = reconstruct_vertex(param, dense=dense)
+    sx, sy, ex, ey = roi_bbox
+    scale_x = (ex - sx) / 120
+    scale_y = (ey - sy) / 120
+    vertex[0, :] = vertex[0, :] * scale_x + sx
+    vertex[1, :] = vertex[1, :] * scale_y + sy
+
+    s = (scale_x + scale_y) / 2
+    vertex[2, :] *= s
+
+    return vertex
