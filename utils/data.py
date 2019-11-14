@@ -1,12 +1,29 @@
 import os
 import cv2
+import torch
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader
 
-# class EyeGlassesDataset(Dataset):
-#     def __init__(self):
+class EyeGlassesDataset(Dataset):
+    def __init__(self,
+                 data,
+                 target,
+                 transform=None):
+        self.data = data
+        self.target = target
+        self.transform = transform
 
+    def __len__(self):
+        return len(self.data)
 
+    def __getitem__(self, index):
+        img = self.data[index]
+        target = self.target[index]
+        if self.transform is not None:
+            img = self.transform(img)
+        # print(target)
+        target = torch.LongTensor([target])
+        return img, target
 
 
 def download_images_labels(img_dir, path_txt):
