@@ -3,6 +3,18 @@ import torch
 import pickle
 import numpy as np
 import os.path as osp
+from pathlib import Path
+from glob import glob
+
+def obtain_paths(path):
+    paths = os.listdir(path)
+    return paths
+
+def create_folder(path):
+    files_folder = Path(path)
+    if not files_folder.exists():
+        files_folder.mkdir(parents=True)
+    return files_folder
 
 
 def get_roi(rect, shape, margin_scale=0.2):
@@ -115,15 +127,15 @@ def _load_tensor(fp, mode='cpu'):
     elif mode.lower() == 'gpu':
         return torch.from_numpy(_load(fp)).cuda()
 
-keypoints = _load('../config_stuff/keypoints_sim.npy')
-w_shp = _load('../config_stuff/w_shp_sim.npy')
-w_exp = _load('../config_stuff/w_exp_sim.npy')
-meta = _load('../config_stuff/param_whitening.pkl')
+keypoints = _load('config_stuff/keypoints_sim.npy')
+w_shp = _load('config_stuff/w_shp_sim.npy')
+w_exp = _load('config_stuff/w_exp_sim.npy')
+meta = _load('config_stuff/param_whitening.pkl')
 
 param_mean = meta.get('param_mean')
 param_std = meta.get('param_std')
-u_shp = _load('../config_stuff/u_shp.npy')
-u_exp = _load('../config_stuff/u_exp.npy')
+u_shp = _load('config_stuff/u_shp.npy')
+u_exp = _load('config_stuff/u_exp.npy')
 u = u_shp + u_exp
 w = np.concatenate((w_shp, w_exp), axis=1)
 w_base = w[keypoints]
