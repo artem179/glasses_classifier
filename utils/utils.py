@@ -5,6 +5,74 @@ import numpy as np
 import os.path as osp
 
 
+def get_roi(rect, shape, margin_scale=0.2):
+    y_min, y_max = rect.top(), rect.bottom()
+    x_min, x_max = rect.left(), rect.right()
+
+    delta_y = abs(y_max - y_min) * margin_scale
+    delta_x = abs(x_max - x_min) * margin_scale
+
+    new_y_min, new_y_max = max(0, y_min - delta_y), min(shape[0], y_max + delta_y)
+    new_x_min, new_x_max = max(0, x_min - delta_x), min(shape[1], x_max + delta_x)
+    # return [new_y_min, new_y_max, new_x_min, new_x_max]
+    return [new_x_min, new_y_min, new_x_max, new_y_max]
+
+
+def get_final_roi(pts, shape, margin_scale=0.2, do_scaling=False):
+    pts = pts[:2]
+    pts = pts.T
+    left_jaw = pts[0]
+    right_jaw = pts[16]
+    left_eyebrow = 0.5 * (pts[18] + pts[19])
+    right_eyebrow = 0.5 * (pts[23] + pts[24])
+    nose = pts[34]
+
+    min_x = left_jaw[0]
+    max_x = right_jaw[0]
+
+    min_y = min(left_eyebrow[1], right_eyebrow[1])
+    max_y = nose[1]
+
+    if do_scaling:
+        delta_y = abs(max_y - min_y) * margin_scale
+        min_y, max_y = max(0, min_y - delta_y), min(shape[0], max_y + delta_y)
+
+    return list(map(int, [min_x, max_x, min_y, max_y]))
+
+
+def crop_img(img, roi_box):
+    h, w = img.shape[:2]
+
+    sx, sy, ex, ey = [int(round(_)) for _ in roi_box]
+    dh, dw = ey - sy, ex - sx
+    if len(img.shape) == 3:
+        res = np.zeros((dh, dw, 3), dtype=np.uint8)
+    else:
+        res = np.zeros((dh, dw), dtype=np.uint8)
+    if sx < 0:
+        sx, dsx = 0, -sx
+    else:
+        dsx = 0
+
+    if ex > w:
+        ex, dex = w, dw - (ex - w)
+    else:
+        dex = dw
+
+    if sy < 0:
+        sy, dsy = 0, -sy
+    else:
+        dsy = 0
+
+    if ey > h:
+        ey, dey = h, dh - (ey - h)
+    else:
+        dey = dh
+
+    res[dsy:dey, dsx:dex] = img[sy:ey, sx:ex]
+    return res
+
+
 def make_abs_path(d):
     return osp.join(osp.dirname(osp.realpath(__file__)), d)
 
