@@ -1,13 +1,14 @@
 import os
 import cv2
 import torch
+from glob import glob
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader
 
 class EyeGlassesDataset(Dataset):
     def __init__(self,
                  data,
-                 target,
+                 target=None,
                  transform=None):
         self.data = data
         self.target = target
@@ -24,6 +25,25 @@ class EyeGlassesDataset(Dataset):
         # print(target)
         target = torch.LongTensor([target])
         return img, target
+
+
+class FolderImages(Dataset):
+    def __init__(self,
+                 path_to_folder,
+                 transform,
+                 detector):
+        self.paths = glob(path_to_folder + '/*')
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.paths)
+
+    def __getitem__(self, index):
+        img = cv2.imread(self.paths[index])
+        if self.transform is not None:
+            img = self.transform(img)
+        return img, self.paths[index]
+
 
 
 def download_images_labels(img_dir, path_txt):
