@@ -30,6 +30,7 @@ if __name__ == "__main__":
                         help='number of workers')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='number of workers')
+    parser.add_argument('--time', action='store_true')
     args = parser.parse_args()
 
     img_paths = glob(args.img_folder + "/*")
@@ -43,13 +44,25 @@ if __name__ == "__main__":
     detector_default = Detector()
     detector_cnn = Detector(cnn=True)
 
+    if args.time:
+        all_time = 0.0
+        n = 0
+        from time import time
+
     for img_path in img_paths:
         cropped_img = detector_default.get_eye_area_roi(img_path)
         if cropped_img is False:
             cropped_img = detector_cnn.get_eye_area_roi(img_path)
         if cropped_img is not False:
+            if args.time:
+                begin = time()
             predict = inference_on_single_image(cropped_img, model, data_transforms['val'])
+            if args.time:
+                all_time += (time() - begin)
+                n += 1
             if predict == 0:
                 print(img_path)
+    if args.time:
+        print("Average time only for inference classification model (without detection) - {}".format(all_time/n))
         # else:
         #     print("Not found face by path - {}".format(img_path))
