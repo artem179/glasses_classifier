@@ -1,3 +1,4 @@
 .idea/*
 example_data_glasses/
 output_images/
+*.png
