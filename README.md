@@ -41,3 +41,5 @@ There are two trained models in this repository.
 | ------------- |:-------------:| -----:|  -----:|
 | small VGG-like      | 0.9987/1.0 | 2.9MB |  5ms (<100ms)|
 | MobileNet-v3  | 0.98/0.99      |  6.7MB |   70ms (<100ms)|
+
+For MobileNet-v3 you can look at `MobileNetV3/mobile-net.ipynb`
