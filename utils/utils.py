@@ -6,6 +6,7 @@ import os.path as osp
 from pathlib import Path
 from glob import glob
 
+
 def obtain_paths(path):
     paths = os.listdir(path)
     return paths
@@ -126,6 +127,7 @@ def _load_tensor(fp, mode='cpu'):
         return torch.from_numpy(_load(fp))
     elif mode.lower() == 'gpu':
         return torch.from_numpy(_load(fp)).cuda()
+
 
 keypoints = _load('config_stuff/keypoints_sim.npy')
 w_shp = _load('config_stuff/w_shp_sim.npy')
